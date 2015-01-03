@@ -38,8 +38,7 @@ object PgfplotsGenerator {
           case 2 => generate1x2Table(plots)
           case 3 => generate1x3Table(plots)
           case 4 => generate2x2Table(plots)
-          case 5 => generate2x3Table(plots)
-          case 6 => generate2x3Table(plots)
+          case 5 | 6 => generate2x3Table(plots)
         }
       }
       case _ => "error: can not generate table bigger than 6 cells"
@@ -96,7 +95,7 @@ object PgfplotsGenerator {
   }
 
   def generate2x2Table(plots: List[String]) = {
-    val nline="\\\\"
+    val nline = "\\\\"
     s"""
        |\\begin{center}
         |\\begin{tabular}{ll}
