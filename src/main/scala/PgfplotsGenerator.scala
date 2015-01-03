@@ -1,3 +1,5 @@
+import java.util
+
 import scala.io.{BufferedSource, Source}
 import scala.util.parsing.json.JSON
 
@@ -13,9 +15,9 @@ object PgfplotsGenerator {
     val config = parsedConfig.getOrElse("accounts", Map())
 
     //generate table environment according to the number of plots
-    val tabEnv: (String, String) = generateTable(config)
+    val table: String = generateTable(config)
 
-    val table: String = latexTableTemplate(tabEnv._1, tabEnv._2)
+    //val table: String = latexTableTemplate(tabEnv._1, tabEnv._2)
     val document: String = latexDocumentTemplae(table)
 
     println("document = " + document)
@@ -24,21 +26,114 @@ object PgfplotsGenerator {
     // run pdflatex <filename>.tex
   }
 
-  def generateTable(config: Any): (String, String) = {
-    config match {
+
+  def generateTable(config: Any): String = {
+
+    val plots: List[String] = generatePlots(config)
+
+    val table: String = config match {
       case x: List[_] => {
         x.size match {
-          case 2 =>
-          case 3 =>
-          case 4 =>
-          case 5 =>
-          case 6 =>
+          case 1 => generate1x1Table(plots)
+          case 2 => generate1x2Table(plots)
+          case 3 => generate1x3Table(plots)
+          case 4 => generate2x2Table(plots)
+          case 5 => generate2x3Table(plots)
+          case 6 => generate2x3Table(plots)
         }
       }
-      case x: Map[String, Any] =>
+      case _ => "error: can not generate table bigger than 6 cells"
     }
-    val plots: List[String] = generatePlots(config)
-    ("lll", plots.mkString("\n"))
+
+    //todo: remove!
+    // plots.mkString("\n")
+    table
+  }
+
+  def generate1x1Table(plots: List[String]) = {
+
+    s"""
+       |\\begin{center}
+        |\\begin{tabular}{l}
+          |% insert cells here
+          |${plots.head}
+        |\\end{tabular}
+       |\\end{center}
+     """.stripMargin
+  }
+
+  def generate1x2Table(plots: List[String]) = {
+
+    s"""
+       |\\begin{center}
+        |\\begin{tabular}{ll}
+          |% insert cells here
+          |
+          |${plots.head}
+          |&
+          |${plots.tail.head}
+        |\\end{tabular}
+       |\\end{center}
+     """.stripMargin
+  }
+
+  def generate1x3Table(plots: List[String]) = {
+
+
+    s"""
+       |\\begin{center}
+        |\\begin{tabular}{lll}
+          |% insert cells here 1x3
+          |
+          |${plots(0)}
+          |&
+          |${plots(1)}
+          |&
+          |${plots(2)}
+        |\\end{tabular}
+       |\\end{center}
+     """.stripMargin
+  }
+
+  def generate2x2Table(plots: List[String]) = {
+    val nline="\\\\"
+    s"""
+       |\\begin{center}
+        |\\begin{tabular}{ll}
+          |% insert cells here 2x2
+          |
+          |${plots(0)}
+          |&
+          |${plots(1)}
+          |\\\\
+          |${plots(2)}
+          |&
+          |${plots(3)}
+        |\\end{tabular}
+       |\\end{center}
+     """.stripMargin
+  }
+
+  def generate2x3Table(plots: List[String]) = {
+    s"""
+       |\\begin{center}
+        |\\begin{tabular}{lll}
+          |% insert cells here 2x3
+          |
+          |${plots(0)}
+          |&
+          |${plots(1)}
+          |&
+          |${plots(2)}
+          |\\\\
+          |${plots(3)}
+          |&
+          |${plots(4)}
+          |&
+          |${if (plots.size == 6) plots(5) else ""}
+        |\\end{tabular}
+       |\\end{center}
+     """.stripMargin
   }
 
   def parseConfiguration(path: String): Map[String, Any] = {
@@ -69,19 +164,17 @@ object PgfplotsGenerator {
       case x: Map[String, Any] => generateSinglePlot(x) :: Nil
       case _ => Nil // todo: change this!
     }
-
-
     plotsStr
-
-
   }
 
   def generateSinglePlot(json: Map[String, Any]): String = {
     //generate the deepest element.... zoom out
     val rawPlot: Map[String, Any] = json.getOrElse("plot", Map()).asInstanceOf[Map[String, Any]]
 
+    // todo: use tikzpictureEnv method
+    val tikzpicture: String = tikzpictureEnv(rawPlot)
 
-    s"generated plot: $json; \n\n"
+    s"%GENERATED: $tikzpicture \n"
 
   }
 
@@ -101,14 +194,30 @@ object PgfplotsGenerator {
      """.stripMargin
   }
 
-  def latexTableTemplate(tabularSettings: String, cells: String): String = {
+  def latexTableTemplate(tabularSettings: String, cells: List[String]): String = {
     s"""
        |\\begin{center}
         |\\begin{tabular}{$tabularSettings}
           |% insert cells here
-          |$cells
+          |${cells.mkString("\n")}
         |\\end{tabular}
        |\\end{center}
+     """.stripMargin
+  }
+
+  def tikzpictureEnv(singlePlotConfig: Map[String, Any]): String = {
+    //todo: analyse the map and convert it into the tikzpicture environment.
+    s"""
+    |\\begin{tikzpicture}[baseline]
+    |     \\begin{loglogaxis}[
+    |         title=Title 1,
+    |         xlabel={Dof},
+    |         ylabel={$$L_\\infty$$ error}, ]
+    |         \\addplot table[x=dof,y=Lmax] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
+    |         \\addplot table[x=dof,y=L2] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
+    |         \\legend{$$d=2$$,$$d=3$$},
+    |     \\end{loglogaxis}
+    |\\end{tikzpicture}
      """.stripMargin
   }
 
