@@ -1,7 +1,10 @@
-import java.util
+import java.io.BufferedWriter
 
-import scala.io.{BufferedSource, Source}
+import scala.io.Source
 import scala.util.parsing.json.JSON
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
 
 /**
  * Created by visenger on 29/12/14.
@@ -12,7 +15,7 @@ object PgfplotsGenerator {
   def main(args: Array[String]) {
     val parsedConfig: Map[String, Any] = parseConfiguration("src/main/resources/pgfplots.conf")
 
-    val config = parsedConfig.getOrElse("accounts", Map())
+    val config = parsedConfig.getOrElse("plots", Map())
 
     //generate table environment according to the number of plots
     val table: String = generateTable(config)
@@ -21,9 +24,17 @@ object PgfplotsGenerator {
     val document: String = latexDocumentTemplae(table)
 
     println("document = " + document)
+    writeToFile(document, "/Users/visenger/Documents/tmp/pgfplots/plots_new.tex")
 
-    //save to file filename.tex
+
     // run pdflatex <filename>.tex
+  }
+
+  def writeToFile(document: String, fileName: String) {
+    val path: Path = Paths.get(fileName)
+    val writer: BufferedWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)
+    writer.write(document)
+    writer.close()
   }
 
 
@@ -41,11 +52,9 @@ object PgfplotsGenerator {
           case 5 | 6 => generate2x3Table(plots)
         }
       }
-      case _ => "error: can not generate table bigger than 6 cells"
+      case _ => "% error: can not generate table bigger than 6 cells"
     }
 
-    //todo: remove!
-    // plots.mkString("\n")
     table
   }
 
@@ -78,24 +87,25 @@ object PgfplotsGenerator {
 
   def generate1x3Table(plots: List[String]) = {
 
-
-    s"""
+    plots match {
+      case x@List(first, second, third) => s"""
        |\\begin{center}
         |\\begin{tabular}{lll}
           |% insert cells here 1x3
           |
-          |${plots(0)}
+          |$first
           |&
-          |${plots(1)}
+          |$second
           |&
-          |${plots(2)}
+          |$third
         |\\end{tabular}
        |\\end{center}
      """.stripMargin
+      case _ => ""
+    }
   }
 
   def generate2x2Table(plots: List[String]) = {
-    val nline = "\\\\"
     s"""
        |\\begin{center}
         |\\begin{tabular}{ll}
@@ -169,7 +179,6 @@ object PgfplotsGenerator {
   def generateSinglePlot(json: Map[String, Any]): String = {
     //generate the deepest element.... zoom out
     val rawPlot: Map[String, Any] = json.getOrElse("plot", Map()).asInstanceOf[Map[String, Any]]
-
     // todo: use tikzpictureEnv method
     val tikzpicture: String = tikzpictureEnv(rawPlot)
 
@@ -204,21 +213,62 @@ object PgfplotsGenerator {
      """.stripMargin
   }
 
+
   def tikzpictureEnv(singlePlotConfig: Map[String, Any]): String = {
-    //todo: analyse the map and convert it into the tikzpicture environment.
+    //analyse the map and convert it into the tikzpicture environment.
+    println("singlePlotConfig = " + singlePlotConfig)
+
+    val axis = singlePlotConfig.getOrElse("axis", "")
+
+    val titleStr = singlePlotConfig.getOrElse("title", "")
+    val title = if (titleStr == "") "" else s"title=$titleStr"
+
+    val xlabelStr = singlePlotConfig.getOrElse("xlabel", "")
+    val xlabel = if (xlabelStr == "") "" else s"xlabel=$xlabelStr"
+
+    val ylabelStr = singlePlotConfig.getOrElse("ylabel", "")
+    val ylabel = if (ylabelStr == "") "" else s"ylabel=$ylabelStr"
+
+    val legendStr = singlePlotConfig.getOrElse("legend", "")
+    val legend = if (legendStr == "") "" else s"legend{$legendStr}"
+
+    val addplot = createAddplotEnv(singlePlotConfig.getOrElse("addplot", List()))
+
     s"""
     |\\begin{tikzpicture}[baseline]
-    |     \\begin{loglogaxis}[
-    |         title=Title 1,
-    |         xlabel={Dof},
-    |         ylabel={$$L_\\infty$$ error}, ]
-    |         \\addplot table[x=dof,y=Lmax] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
-    |         \\addplot table[x=dof,y=L2] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
-    |         \\legend{$$d=2$$,$$d=3$$},
-    |     \\end{loglogaxis}
+    |     \\begin{$axis}[
+    |         $title,
+    |         $xlabel,
+    |         $ylabel, ]
+    |
+    |$addplot
+    |
+    |         \\$legend,
+    |
+    |     \\end{$axis}
     |\\end{tikzpicture}
      """.stripMargin
   }
 
 
+  def convertToAddplot(value: Map[String, Any]): String = {
+    //Map(table -> x=dof, y=L2, data -> /Users/visenger/Documents/tmp/pgfplots/data/datafile.dat)
+    //  \\addplot table[x=dof,y=Lmax] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
+    val table = value.getOrElse("table", "")
+    val data = value.getOrElse("data", "")
+    s"         \\addplot table[$table] {$data};"
+  }
+
+  def createAddplotEnv(singlePlotConfig: Any): String = {
+
+
+    val plots: List[String] = singlePlotConfig match {
+      case x: List[Map[String, Any]] => {
+        x.map(convertToAddplot(_))
+
+      }
+      case x: Map[String, Any] => convertToAddplot(x) :: Nil
+    }
+    plots.mkString("\n")
+  }
 }
