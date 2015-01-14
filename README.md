@@ -11,4 +11,4 @@ chmod +x pgfplots.sh
 
 Prerequisites:
 ==============
-Scala > 2.10.x
+Scala 2.10.x or later.
