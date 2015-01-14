@@ -1,3 +1,7 @@
+#!/bin/sh
+exec scala -savecompiled "$0" "$@"
+!#
+
 import java.io.BufferedWriter
 
 import scala.io.Source
@@ -6,36 +10,28 @@ import scala.util.parsing.json.JSON
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
-/**
- * Created by visenger on 29/12/14.
- */
+
 object PgfplotsGenerator {
 
 
   def main(args: Array[String]) {
 
     val configPath: String = "src/main/resources/pgfplots.conf"
-
+    
     val dir = System.getProperty("user.dir")
     val texOutputPath: String = s"$dir/plots_only.tex"
-
+    
     args.foreach(println)
     //analyse args
     val parsedConfig: Map[String, Any] = parseConfiguration(configPath)
 
     val config = parsedConfig.getOrElse("plots", Map())
 
-    //generate table environment according to the number of plots
-    //    val table: String = generateTable(config)
-
-    //    val plotsL: List[String] = generatePlots(config)
 
     val plotsCollection: String = plots(generatePlots(config))
 
-    //val table: String = latexTableTemplate(tabEnv._1, tabEnv._2)
     val document: String = latexDocumentTemplae(plotsCollection)
 
-    println("document = " + document)
     writeToFile(document, texOutputPath)
 
 
@@ -59,113 +55,7 @@ object PgfplotsGenerator {
     input.mkString(separator)
   }
 
-  def generateTable(config: Any): String = {
-
-    val plots: List[String] = generatePlots(config)
-
-    val table: String = config match {
-      case x: List[_] => {
-        x.size match {
-          case 1 => generate1x1Table(plots)
-          case 2 => generate1x2Table(plots)
-          case 3 => generate1x3Table(plots)
-          case 4 => generate2x2Table(plots)
-          case 5 | 6 => generate2x3Table(plots)
-        }
-      }
-      case _ => "% error: can not generate table bigger than 6 cells"
-    }
-
-    table
-  }
-
-  def generate1x1Table(plots: List[String]) = {
-
-    s"""
-       |\\begin{center}
-        |\\begin{tabular}{l}
-          |% insert cells here
-          |${plots.head}
-        |\\end{tabular}
-       |\\end{center}
-     """.stripMargin
-  }
-
-  def generate1x2Table(plots: List[String]) = {
-
-    s"""
-       |\\begin{center}
-        |\\begin{tabular}{ll}
-          |% insert cells here
-          |
-          |${plots.head}
-          |&
-          |${plots.tail.head}
-        |\\end{tabular}
-       |\\end{center}
-     """.stripMargin
-  }
-
-  def generate1x3Table(plots: List[String]) = {
-
-    plots match {
-      case x@List(first, second, third) => s"""
-       |\\begin{center}
-        |\\begin{tabular}{lll}
-          |% insert cells here 1x3
-          |
-          |$first
-          |&
-          |$second
-          |&
-          |$third
-        |\\end{tabular}
-       |\\end{center}
-     """.stripMargin
-      case _ => ""
-    }
-  }
-
-  def generate2x2Table(plots: List[String]) = {
-    s"""
-       |\\begin{center}
-        |\\begin{tabular}{ll}
-          |% insert cells here 2x2
-          |
-          |${plots(0)}
-          |&
-          |${plots(1)}
-          |\\\\
-          |${plots(2)}
-          |&
-          |${plots(3)}
-        |\\end{tabular}
-       |\\end{center}
-     """.stripMargin
-  }
-
-  def generate2x3Table(plots: List[String]) = {
-    s"""
-       |\\begin{center}
-        |\\begin{tabular}{lll}
-          |% insert cells here 2x3
-          |
-          |${plots(0)}
-          |&
-          |${plots(1)}
-          |&
-          |${plots(2)}
-          |\\\\
-          |${plots(3)}
-          |&
-          |${plots(4)}
-          |&
-          |${if (plots.size == 6) plots(5) else ""}
-        |\\end{tabular}
-       |\\end{center}
-     """.stripMargin
-  }
-
+  
   def parseConfiguration(path: String): Map[String, Any] = {
     //    val source: BufferedSource = Source.fromURL(getClass().getResource("pgfplots.conf"))
     //    val configAsString: String = source.getLines().mkString("\n")
@@ -182,7 +72,6 @@ object PgfplotsGenerator {
     afterParseMap
   }
 
-  @SuppressWarnings(Array("all"))
   def generatePlots(input: Any): List[String] = {
     val plotsStr: List[String] = input match {
       case x :: xs => {
@@ -281,12 +170,9 @@ object PgfplotsGenerator {
   }
 
   def createAddplotEnv(singlePlotConfig: Any): String = {
-
-
     val plots: List[String] = singlePlotConfig match {
       case x: List[_] => {
         x.map(convertToAddplot(_))
-
       }
       case x: Map[_, _] => convertToAddplot(x) :: Nil
       case _ => Nil
@@ -294,3 +180,5 @@ object PgfplotsGenerator {
     plots.mkString("\n")
   }
 }
+
+PgfplotsGenerator.main(args)
