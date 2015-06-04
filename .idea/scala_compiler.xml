@@ -4,5 +4,10 @@
     <parameters>
       <parameter value="-target:jvm-1.7" />
     </parameters>
+    <profile name="Maven 1" modules="PlotsGenerator">
+      <parameters>
+        <parameter value="-target:jvm-1.7" />
+      </parameters>
+    </profile>
   </component>
 </project>

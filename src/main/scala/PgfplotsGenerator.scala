@@ -8,16 +8,18 @@ import java.nio.file.{Files, Path, Paths}
 
 /**
  * Created by visenger on 29/12/14.
+ *
+ * http://tex.stackexchange.com/questions/188147/how-to-put-legend-below-the-chart
  */
 object PgfplotsGenerator {
 
 
   def main(args: Array[String]) {
 
-    val configPath: String = "src/main/resources/pgfplots.conf"
+    val configPath: String = "src/main/resources/datasizeplotsTPCH.conf"
 
     val dir = System.getProperty("user.dir")
-    val texOutputPath: String = s"$dir/plots_only.tex"
+    val texOutputPath: String = s"$dir/datasize-tpch.tex"
 
     args.foreach(println)
     //analyse args
@@ -83,11 +85,11 @@ object PgfplotsGenerator {
 
     s"""
        |\\begin{center}
-        |\\begin{tabular}{l}
-          |% insert cells here
-          |${plots.head}
+       |\\begin{tabular}{l}
+       |% insert cells here
+       |${plots.head}
         |\\end{tabular}
-       |\\end{center}
+        |\\end{center}
      """.stripMargin
   }
 
@@ -95,14 +97,14 @@ object PgfplotsGenerator {
 
     s"""
        |\\begin{center}
-        |\\begin{tabular}{ll}
-          |% insert cells here
-          |
-          |${plots.head}
-          |&
-          |${plots.tail.head}
+       |\\begin{tabular}{ll}
+       |% insert cells here
+       |
+       |${plots.head}
+        |&
+        |${plots.tail.head}
         |\\end{tabular}
-       |\\end{center}
+        |\\end{center}
      """.stripMargin
   }
 
@@ -110,17 +112,17 @@ object PgfplotsGenerator {
 
     plots match {
       case x@List(first, second, third) => s"""
-       |\\begin{center}
-        |\\begin{tabular}{lll}
-          |% insert cells here 1x3
-          |
-          |$first
+                                              |\\begin{center}
+                                              |\\begin{tabular}{lll}
+                                              |% insert cells here 1x3
+                                              |
+                                              |$first
           |&
           |$second
           |&
           |$third
-        |\\end{tabular}
-       |\\end{center}
+          |\\end{tabular}
+          |\\end{center}
      """.stripMargin
       case _ => ""
     }
@@ -129,40 +131,40 @@ object PgfplotsGenerator {
   def generate2x2Table(plots: List[String]) = {
     s"""
        |\\begin{center}
-        |\\begin{tabular}{ll}
-          |% insert cells here 2x2
-          |
-          |${plots(0)}
-          |&
-          |${plots(1)}
-          |\\\\
-          |${plots(2)}
-          |&
-          |${plots(3)}
+       |\\begin{tabular}{ll}
+       |% insert cells here 2x2
+       |
+       |${plots(0)}
+        |&
+        |${plots(1)}
+        |\\\\
+        |${plots(2)}
+        |&
+        |${plots(3)}
         |\\end{tabular}
-       |\\end{center}
+        |\\end{center}
      """.stripMargin
   }
 
   def generate2x3Table(plots: List[String]) = {
     s"""
        |\\begin{center}
-        |\\begin{tabular}{lll}
-          |% insert cells here 2x3
-          |
-          |${plots(0)}
-          |&
-          |${plots(1)}
-          |&
-          |${plots(2)}
-          |\\\\
-          |${plots(3)}
-          |&
-          |${plots(4)}
-          |&
-          |${if (plots.size == 6) plots(5) else ""}
+       |\\begin{tabular}{lll}
+       |% insert cells here 2x3
+       |
+       |${plots(0)}
+        |&
+        |${plots(1)}
+        |&
+        |${plots(2)}
+        |\\\\
+        |${plots(3)}
+        |&
+        |${plots(4)}
+        |&
+        |${if (plots.size == 6) plots(5) else ""}
         |\\end{tabular}
-       |\\end{center}
+        |\\end{center}
      """.stripMargin
   }
 
@@ -210,16 +212,16 @@ object PgfplotsGenerator {
 
   def latexDocumentTemplae(pgfPlots: String): String = {
     s"""
-        |\\documentclass[a4paper, landscape]{article}
-          |\\usepackage{pgfplots}
-          |\\pgfplotsset{small,  compat=1.5}
-          |\\begin{document}
+       |\\documentclass[a4paper, landscape]{article}
+       |\\usepackage{pgfplots}
+       |\\pgfplotsset{small,  compat=1.5}
+       |\\begin{document}
 
-          |\\pgfplotsset{
-          |small
-          |}
-          |% insert plots here
-          |$pgfPlots
+       |\\pgfplotsset{
+       |small
+       |}
+       |% insert plots here
+       |$pgfPlots
         |\\end{document}
      """.stripMargin
   }
@@ -227,11 +229,11 @@ object PgfplotsGenerator {
   def latexTableTemplate(tabularSettings: String, cells: List[String]): String = {
     s"""
        |\\begin{center}
-        |\\begin{tabular}{$tabularSettings}
-          |% insert cells here
-          |${cells.mkString("\n")}
+       |\\begin{tabular}{$tabularSettings}
+                                           |% insert cells here
+                                           |${cells.mkString("\n")}
         |\\end{tabular}
-       |\\end{center}
+        |\\end{center}
      """.stripMargin
   }
 
@@ -256,18 +258,20 @@ object PgfplotsGenerator {
     val addplot = createAddplotEnv(singlePlotConfig.getOrElse("addplot", List()))
 
     s"""
-    |\\begin{tikzpicture}[baseline]
-    |     \\begin{$axis}[
-    |         $title,
-    |         $xlabel,
-    |         $ylabel, ]
-    |
-    |$addplot
-    |
-    |         \\$legend,
-    |
-    |     \\end{$axis}
-    |\\end{tikzpicture}
+       |\\begin{tikzpicture}
+       |%\\selectcolormodel{gray}
+       |  \\begin{$axis}[
+                         |      legend pos=outer north east,
+                         |      $title,
+                                        |      $xlabel,
+                                                        |      $ylabel, ]
+                                                                        |
+                                                                        |$addplot
+        |
+        |      \\$legend,
+                          |
+                          |  \\end{$axis}
+                                          |\\end{tikzpicture}
      """.stripMargin
   }
 
@@ -294,3 +298,138 @@ object PgfplotsGenerator {
     plots.mkString("\n")
   }
 }
+
+
+object PlotsDataSizeConfigurationGenerator extends App {
+
+  //NOISE	CFDF1	MDF1	CFDMDF1	TIME
+
+  val dataSetSizes = Array(500, 1000, 10000, 20000, 30000, 40000, 50000, 70000, 90000, 100000)
+
+  val plotsForDataSize: Array[String] = for (i <- dataSetSizes) yield {
+    val plotConfig = s"""{
+      "plot": {
+        "axis":"axis",
+        "title": "TPC-H Data Cleaning for ${i}k",
+        "xlabel": "noise",
+        "ylabel": "F1",
+        "addplot": [
+          {
+            "table": "x=NOISE, y=CFDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-datasize.tsv"
+          },
+          {
+            "table": "x=NOISE, y=MDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-datasize.tsv"
+          },
+          {
+            "table": "x=NOISE, y=CFDMDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-datasize.tsv"
+          }
+        ],
+        "legend": "$$cfd$$,$$md$$,$$cfd+md$$"
+      }
+    }"""
+    plotConfig
+  }
+  val start = s"""{
+  "plots": [
+    """
+  val sep =
+    s""",
+       |
+     """.stripMargin
+  val end = s"""]
+               |}
+     """.stripMargin
+  val plotsConfig: String = plotsForDataSize.mkString(start, sep, end)
+
+
+  print(plotsConfig)
+}
+
+object PlotsNoiseConfigGeneration extends App {
+
+  //DATASIZE	CFDF1	MDF1	CFDMDF1	TIME
+
+  val noise = Array(2, 4, 6, 8, 10)
+
+  val plotsForNoise: Array[String] = for (i <- noise) yield {
+    val plotConfig = s"""{
+      "plot": {
+        "axis":"axis",
+        "title": "TPC-H Data Cleaning for noise ${i}\\%",
+        "xlabel": "data size in k",
+        "ylabel": "F1",
+        "addplot": [
+          {
+            "table": "x=DATASIZE, y=CFDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-noise.tsv"
+          },
+          {
+            "table": "x=DATASIZE, y=MDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-noise.tsv"
+          },
+          {
+            "table": "x=DATASIZE, y=CFDMDF1",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-$i-noise.tsv"
+          }
+        ],
+        "legend": "$$cfd$$,$$md$$,$$cfd+md$$"
+      }
+    }"""
+    plotConfig
+  }
+
+  val plotConfig = s"""{
+      "plot": {
+        "axis":"axis",
+        "title": "runtime for HOSP Data Cleaning",
+        "xlabel": "data size in k",
+        "ylabel": "seconds",
+        "addplot": [
+          {
+            "table": "x=DATASIZE, y=TIME",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-2-noise.tsv"
+          },
+          {
+            "table": "x=DATASIZE, y=TIME",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-4-noise.tsv"
+          },
+          {
+            "table": "x=DATASIZE, y=TIME",
+            "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-6-noise.tsv"
+          },
+          {
+          "table": "x=DATASIZE, y=TIME",
+          "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-8-noise.tsv"
+          },
+          {
+          "table": "x=DATASIZE, y=TIME",
+          "data": "/Users/visenger/data/TPC-H/tpch_2_17_0/tables/evaluation/evaluation-10-noise.tsv"
+          }
+        ],
+        "legend": "$$noise 2$$,$$noise 4$$,$$noise 6$$,$$noise 8$$,$$noise 10$$"
+      }
+    },
+    """
+
+  val start = s"""{
+  "plots": [
+    $plotConfig"""
+  val sep =
+    s""",
+       |
+     """.stripMargin
+  val end = s"""]
+               |}
+     """.stripMargin
+
+
+  val plotsConfig: String = plotsForNoise.mkString(start, sep, end)
+
+
+  print(plotsConfig)
+
+}
+

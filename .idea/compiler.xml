@@ -25,5 +25,8 @@
         <module name="PlotsGenerator" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="PlotsGenerator" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
 </project>
