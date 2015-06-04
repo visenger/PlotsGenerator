@@ -37,7 +37,7 @@ object PgfplotsGenerator {
     //val table: String = latexTableTemplate(tabEnv._1, tabEnv._2)
     val document: String = latexDocumentTemplae(plotsCollection)
 
-    println("document = " + document)
+    println("latex document = " + document)
     writeToFile(document, texOutputPath)
 
 
