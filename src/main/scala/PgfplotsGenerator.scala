@@ -16,10 +16,10 @@ object PgfplotsGenerator {
 
   def main(args: Array[String]) {
 
-    val configPath: String = "src/main/resources/datasizeplotsTPCH.conf"
+    val configPath: String = "src/main/resources/noiseHOSP-no-hack.conf"
 
     val dir = System.getProperty("user.dir")
-    val texOutputPath: String = s"$dir/datasize-tpch.tex"
+    val texOutputPath: String = s"$dir/noise-hosp-no-hack.tex"
 
     args.foreach(println)
     //analyse args
