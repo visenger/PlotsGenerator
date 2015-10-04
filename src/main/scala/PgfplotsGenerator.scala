@@ -16,10 +16,10 @@ object PgfplotsGenerator {
 
   def main(args: Array[String]) {
 
-    val configPath: String = "src/main/resources/noiseHOSP-no-hack.conf"
+    val configPath: String = "src/main/resources/msag-p-r.conf"
 
     val dir = System.getProperty("user.dir")
-    val texOutputPath: String = s"$dir/noise-hosp-no-hack.tex"
+    val texOutputPath: String = s"$dir/msag-plots.tex"
 
     args.foreach(println)
     //analyse args
@@ -27,21 +27,13 @@ object PgfplotsGenerator {
 
     val config = parsedConfig.getOrElse("plots", Map())
 
-    //generate table environment according to the number of plots
-    //    val table: String = generateTable(config)
-
-    //    val plotsL: List[String] = generatePlots(config)
-
     val plotsCollection: String = plots(generatePlots(config))
 
-    //val table: String = latexTableTemplate(tabEnv._1, tabEnv._2)
-    val document: String = latexDocumentTemplae(plotsCollection)
+    val document: String = latexDocumentTemplate(plotsCollection)
 
     println("latex document = " + document)
     writeToFile(document, texOutputPath)
 
-
-    // run pdflatex <filename>.tex
   }
 
   def writeToFile(document: String, fileName: String) {
@@ -61,121 +53,11 @@ object PgfplotsGenerator {
     input.mkString(separator)
   }
 
-  def generateTable(config: Any): String = {
-
-    val plots: List[String] = generatePlots(config)
-
-    val table: String = config match {
-      case x: List[_] => {
-        x.size match {
-          case 1 => generate1x1Table(plots)
-          case 2 => generate1x2Table(plots)
-          case 3 => generate1x3Table(plots)
-          case 4 => generate2x2Table(plots)
-          case 5 | 6 => generate2x3Table(plots)
-        }
-      }
-      case _ => "% error: can not generate table bigger than 6 cells"
-    }
-
-    table
-  }
-
-  def generate1x1Table(plots: List[String]) = {
-
-    s"""
-       |\\begin{center}
-       |\\begin{tabular}{l}
-       |% insert cells here
-       |${plots.head}
-        |\\end{tabular}
-        |\\end{center}
-     """.stripMargin
-  }
-
-  def generate1x2Table(plots: List[String]) = {
-
-    s"""
-       |\\begin{center}
-       |\\begin{tabular}{ll}
-       |% insert cells here
-       |
-       |${plots.head}
-        |&
-        |${plots.tail.head}
-        |\\end{tabular}
-        |\\end{center}
-     """.stripMargin
-  }
-
-  def generate1x3Table(plots: List[String]) = {
-
-    plots match {
-      case x@List(first, second, third) => s"""
-                                              |\\begin{center}
-                                              |\\begin{tabular}{lll}
-                                              |% insert cells here 1x3
-                                              |
-                                              |$first
-          |&
-          |$second
-          |&
-          |$third
-          |\\end{tabular}
-          |\\end{center}
-     """.stripMargin
-      case _ => ""
-    }
-  }
-
-  def generate2x2Table(plots: List[String]) = {
-    s"""
-       |\\begin{center}
-       |\\begin{tabular}{ll}
-       |% insert cells here 2x2
-       |
-       |${plots(0)}
-        |&
-        |${plots(1)}
-        |\\\\
-        |${plots(2)}
-        |&
-        |${plots(3)}
-        |\\end{tabular}
-        |\\end{center}
-     """.stripMargin
-  }
-
-  def generate2x3Table(plots: List[String]) = {
-    s"""
-       |\\begin{center}
-       |\\begin{tabular}{lll}
-       |% insert cells here 2x3
-       |
-       |${plots(0)}
-        |&
-        |${plots(1)}
-        |&
-        |${plots(2)}
-        |\\\\
-        |${plots(3)}
-        |&
-        |${plots(4)}
-        |&
-        |${if (plots.size == 6) plots(5) else ""}
-        |\\end{tabular}
-        |\\end{center}
-     """.stripMargin
-  }
 
   def parseConfiguration(path: String): Map[String, Any] = {
-    //    val source: BufferedSource = Source.fromURL(getClass().getResource("pgfplots.conf"))
-    //    val configAsString: String = source.getLines().mkString("\n")
-    //    println("configAsString = " + configAsString)
     val json: String = Source.fromFile(path).getLines().mkString("\n")
 
     //parse json
-
     val parsedJson: Option[Any] = JSON.parseFull(json)
     val afterParseMap: Map[String, Any] = parsedJson match {
       case Some(x) => x.asInstanceOf[Map[String, Any]]
@@ -203,14 +85,14 @@ object PgfplotsGenerator {
   def generateSinglePlot(json: Map[_, Any]): String = {
     //generate the deepest element.... zoom out
     val rawPlot: Map[String, Any] = json.asInstanceOf[Map[String, Any]].getOrElse("plot", Map()).asInstanceOf[Map[String, Any]]
-    // todo: use tikzpictureEnv method
+    
     val tikzpicture: String = tikzpictureEnv(rawPlot)
 
     s"%GENERATED: $tikzpicture \n"
 
   }
 
-  def latexDocumentTemplae(pgfPlots: String): String = {
+  def latexDocumentTemplate(pgfPlots: String): String = {
     s"""
        |\\documentclass[a4paper, landscape]{article}
        |\\usepackage{pgfplots}
@@ -260,25 +142,23 @@ object PgfplotsGenerator {
     s"""
        |\\begin{tikzpicture}
        |%\\selectcolormodel{gray}
-       |  \\begin{$axis}[
-                         |      legend pos=outer north east,
-                         |      $title,
-                                        |      $xlabel,
-                                                        |      $ylabel, ]
-                                                                        |
-                                                                        |$addplot
+       | \\begin{$axis}[
+                        |     legend pos=outer north east,
+                        |     $title,
+                                      |     $xlabel,
+                                                     |     $ylabel, ]
+                                                                    |
+                                                                    |$addplot
         |
-        |      \\$legend,
-                          |
-                          |  \\end{$axis}
-                                          |\\end{tikzpicture}
+        |     \\$legend,
+                         |
+                         | \\end{$axis}
+                                        |\\end{tikzpicture}
      """.stripMargin
   }
 
 
   def convertToAddplot(value: Any): String = {
-    //Map(table -> x=dof, y=L2, data -> /Users/visenger/Documents/tmp/pgfplots/data/datafile.dat)
-    //  \\addplot table[x=dof,y=Lmax] {/Users/visenger/Documents/tmp/pgfplots/data/datafile.dat};
     val table = value.asInstanceOf[Map[String, Any]].getOrElse("table", "")
     val data = value.asInstanceOf[Map[String, Any]].getOrElse("data", "")
     s"         \\addplot table[$table] {$data};"
@@ -299,7 +179,7 @@ object PgfplotsGenerator {
   }
 }
 
-
+// create config for plots generation.
 object PlotsDataSizeConfigurationGenerator extends App {
 
   //NOISE	CFDF1	MDF1	CFDMDF1	TIME
