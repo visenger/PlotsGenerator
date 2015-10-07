@@ -1,5 +1,7 @@
 import java.io.BufferedWriter
 
+
+import scala.collection.immutable.IndexedSeq
 import scala.io.Source
 import scala.util.parsing.json.JSON
 
@@ -16,13 +18,19 @@ object PgfplotsGenerator {
 
   def main(args: Array[String]) {
 
-    val configPath: String = "src/main/resources/msag-p-r.conf"
+    //    todo: arguments parser.
+    // -config <json file name> -output <path/file.tex>
 
-    val dir = System.getProperty("user.dir")
-    val texOutputPath: String = s"$dir/msag-plots.tex"
+    val parseConfig = ConfigParser.parseConfig(args)
+
+    val configPath: String = parseConfig.getOrElse('config, "src/main/resources/msag-p-r.conf").toString
+
+    //val configPath: String = "src/main/resources/msag-p-r.conf"
+    val texOutputPath = parseConfig.getOrElse('output, s"${System.getProperty("user.dir")}/msag-plots.tex").toString
+    //val texOutputPath: String = s"${System.getProperty("user.dir")}/msag-plots.tex"
 
     args.foreach(println)
-    //analyse args
+    /* parse config and generate plots */
     val parsedConfig: Map[String, Any] = parseConfiguration(configPath)
 
     val config = parsedConfig.getOrElse("plots", Map())
@@ -85,7 +93,7 @@ object PgfplotsGenerator {
   def generateSinglePlot(json: Map[_, Any]): String = {
     //generate the deepest element.... zoom out
     val rawPlot: Map[String, Any] = json.asInstanceOf[Map[String, Any]].getOrElse("plot", Map()).asInstanceOf[Map[String, Any]]
-    
+
     val tikzpicture: String = tikzpictureEnv(rawPlot)
 
     s"%GENERATED: $tikzpicture \n"
@@ -134,26 +142,40 @@ object PgfplotsGenerator {
     val ylabelStr = singlePlotConfig.getOrElse("ylabel", "")
     val ylabel = if (ylabelStr == "") "" else s"ylabel=$ylabelStr"
 
-    val legendStr = singlePlotConfig.getOrElse("legend", "")
-    val legend = if (legendStr == "") "" else s"legend{$legendStr}"
 
-    val addplot = createAddplotEnv(singlePlotConfig.getOrElse("addplot", List()))
+    val addPlotsConfig = singlePlotConfig.getOrElse("addplot", List())
+    val addplot = createAddplotEnv(addPlotsConfig)
+
+    val legendStr = singlePlotConfig.getOrElse("legend", "")
+    val legend = if (legendStr == "") {
+      //todo:create default legend from the size of plots
+      val legendString: String = addPlotsConfig match {
+        case x: Traversable[_] => {
+          val defaultLegends: IndexedSeq[String] = for (i <- 1 until x.size) yield s"plot $i"
+          defaultLegends.mkString(",")
+        }
+        case _ => ""
+      }
+      s"legend{$legendString}"
+      //""
+    } else s"legend{$legendStr}"
+
 
     s"""
        |\\begin{tikzpicture}
        |%\\selectcolormodel{gray}
-       | \\begin{$axis}[
-                        |     legend pos=outer north east,
-                        |     $title,
-                                      |     $xlabel,
-                                                     |     $ylabel, ]
-                                                                    |
-                                                                    |$addplot
+       |\\begin{$axis}[
+                       |legend pos=outer north east,
+                       | $title,
+                                 | $xlabel,
+                                            | $ylabel, ]
+                                                       |
+                                                       |$addplot
         |
-        |     \\$legend,
-                         |
-                         | \\end{$axis}
-                                        |\\end{tikzpicture}
+        |\\$legend,
+                    |
+                    |\\end{$axis}
+                                  |\\end{tikzpicture}
      """.stripMargin
   }
 
@@ -165,8 +187,6 @@ object PgfplotsGenerator {
   }
 
   def createAddplotEnv(singlePlotConfig: Any): String = {
-
-
     val plots: List[String] = singlePlotConfig match {
       case x: List[_] => {
         x.map(convertToAddplot(_))
