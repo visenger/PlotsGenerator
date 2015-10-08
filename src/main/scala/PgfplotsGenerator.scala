@@ -146,19 +146,7 @@ object PgfplotsGenerator {
     val addPlotsConfig = singlePlotConfig.getOrElse("addplot", List())
     val addplot = createAddplotEnv(addPlotsConfig)
 
-    val legendStr = singlePlotConfig.getOrElse("legend", "")
-    val legend = if (legendStr == "") {
-      //todo:create default legend from the size of plots
-      val legendString: String = addPlotsConfig match {
-        case x: Traversable[_] => {
-          val defaultLegends: IndexedSeq[String] = for (i <- 1 until x.size) yield s"plot $i"
-          defaultLegends.mkString(",")
-        }
-        case _ => ""
-      }
-      s"legend{$legendString}"
-      //""
-    } else s"legend{$legendStr}"
+    val legend = generateLegendString(addPlotsConfig, singlePlotConfig.getOrElse("legend", ""))
 
 
     s"""
@@ -179,6 +167,20 @@ object PgfplotsGenerator {
      """.stripMargin
   }
 
+
+  private def generateLegendString(addPlotsConfig: Any, legendStr: Any): String = {
+    if (legendStr == "") {
+      //todo:create default legend from the size of plots
+      val legendString: String = addPlotsConfig match {
+        case x: Traversable[_] => {
+          val defaultLegends: IndexedSeq[String] = for (i <- 1 until x.size) yield s"plot $i"
+          defaultLegends.mkString(",")
+        }
+        case _ => ""
+      }
+      s"legend{$legendString}"
+    } else s"legend{$legendStr}"
+  }
 
   def convertToAddplot(value: Any): String = {
     val table = value.asInstanceOf[Map[String, Any]].getOrElse("table", "")
