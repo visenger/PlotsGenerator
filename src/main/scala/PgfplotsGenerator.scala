@@ -1,18 +1,16 @@
 import java.io.BufferedWriter
-
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
 
 import scala.collection.immutable.IndexedSeq
 import scala.io.Source
 import scala.util.parsing.json.JSON
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
-
 /**
- * Created by visenger on 29/12/14.
- *
- * http://tex.stackexchange.com/questions/188147/how-to-put-legend-below-the-chart
- */
+  * Created by visenger on 29/12/14.
+  *
+  * http://tex.stackexchange.com/questions/188147/how-to-put-legend-below-the-chart
+  */
 object PgfplotsGenerator {
 
 
@@ -23,10 +21,13 @@ object PgfplotsGenerator {
 
     val parseConfig = ConfigParser.parseConfig(args)
 
-    val configPath: String = parseConfig.getOrElse('config, "src/main/resources/msag-p-r.conf").toString
+    val configPath: String = parseConfig
+      .getOrElse('config, "src/main/resources/msag-p-r.conf")
+      .toString
 
     //val configPath: String = "src/main/resources/msag-p-r.conf"
-    val texOutputPath = parseConfig.getOrElse('output, s"${System.getProperty("user.dir")}/msag-plots.tex").toString
+    val texOutputPath = parseConfig
+      .getOrElse('output, s"${System.getProperty("user.dir")}/msag-plots.tex").toString
     //val texOutputPath: String = s"${System.getProperty("user.dir")}/msag-plots.tex"
 
     args.foreach(println)
@@ -40,7 +41,7 @@ object PgfplotsGenerator {
     val document: String = latexDocumentTemplate(plotsCollection)
 
     println("latex document = " + document)
-    writeToFile(document, texOutputPath)
+    // writeToFile(document, texOutputPath)
 
   }
 
@@ -112,7 +113,7 @@ object PgfplotsGenerator {
        |}
        |% insert plots here
        |$pgfPlots
-        |\\end{document}
+       |\\end{document}
      """.stripMargin
   }
 
@@ -120,10 +121,10 @@ object PgfplotsGenerator {
     s"""
        |\\begin{center}
        |\\begin{tabular}{$tabularSettings}
-                                           |% insert cells here
-                                           |${cells.mkString("\n")}
-        |\\end{tabular}
-        |\\end{center}
+       |% insert cells here
+       |${cells.mkString("\n")}
+       |\\end{tabular}
+       |\\end{center}
      """.stripMargin
   }
 
@@ -148,22 +149,21 @@ object PgfplotsGenerator {
 
     val legend = generateLegendString(addPlotsConfig, singlePlotConfig.getOrElse("legend", ""))
 
-
     s"""
        |\\begin{tikzpicture}
        |%\\selectcolormodel{gray}
        |\\begin{$axis}[
-                       |legend pos=outer north east,
-                       | $title,
-                                 | $xlabel,
-                                            | $ylabel, ]
-                                                       |
+       |legend pos=outer north east,
+       | $title,
+       | $xlabel,
+       | $ylabel, ]
+       |
                                                        |$addplot
-        |
+       |
         |\\$legend,
-                    |
+       |
                     |\\end{$axis}
-                                  |\\end{tikzpicture}
+       |\\end{tikzpicture}
      """.stripMargin
   }
 
@@ -209,7 +209,8 @@ object PlotsDataSizeConfigurationGenerator extends App {
   val dataSetSizes = Array(500, 1000, 10000, 20000, 30000, 40000, 50000, 70000, 90000, 100000)
 
   val plotsForDataSize: Array[String] = for (i <- dataSetSizes) yield {
-    val plotConfig = s"""{
+    val plotConfig =
+      s"""{
       "plot": {
         "axis":"axis",
         "title": "TPC-H Data Cleaning for ${i}k",
@@ -234,20 +235,71 @@ object PlotsDataSizeConfigurationGenerator extends App {
     }"""
     plotConfig
   }
-  val start = s"""{
+  val start =
+    s"""{
   "plots": [
     """
   val sep =
     s""",
        |
      """.stripMargin
-  val end = s"""]
-               |}
+  val end =
+    s"""]
+       |}
      """.stripMargin
   val plotsConfig: String = plotsForDataSize.mkString(start, sep, end)
 
 
   print(plotsConfig)
+}
+
+object PlotModelAccuracyGenerator extends App {
+
+
+  def singlePlotConfig(data: String) =
+    s"""{
+      "plot": {
+        "axis":"axis",
+        "title": "Model accuracy for the different sizes of trainings data on ${data}",
+        "xlabel": "Fraction of data for training model",
+        "ylabel": "Accuracy",
+        "addplot": [
+          {
+            "table": "x=DATASIZE, y=B-$data",
+            "data": "/Users/visenger/research/datasets/EXPERIMENTS/strategies/23-01-2018/training-accuracy.tsv"
+          },
+          {
+            "table": "x=DATASIZE, y=S-$data",
+            "data": "/Users/visenger/research/datasets/EXPERIMENTS/strategies/23-01-2018/training-accuracy.tsv"
+          }
+        ],
+        "legend": "$$bagging$$,$$stacking$$"
+      }
+    }"""
+
+  val datasets: Seq[String] = Seq("blackoak", "hosp", "salaries", "flights")
+
+  val plots: Seq[String] = datasets.map(dataset => singlePlotConfig(dataset.toUpperCase()))
+
+  val start =
+    s"""{
+  "plots": [
+      """.stripMargin
+  val sep =
+    s""",
+       |
+     """.stripMargin
+  val end =
+    s"""]
+       |}
+     """.stripMargin
+
+  val collectedPlots: String = plots.mkString(start, sep, end)
+
+
+  println(collectedPlots)
+
+
 }
 
 object PlotsNoiseConfigGeneration extends App {
@@ -257,7 +309,8 @@ object PlotsNoiseConfigGeneration extends App {
   val noise = Array(2, 4, 6, 8, 10)
 
   val plotsForNoise: Array[String] = for (i <- noise) yield {
-    val plotConfig = s"""{
+    val plotConfig =
+      s"""{
       "plot": {
         "axis":"axis",
         "title": "TPC-H Data Cleaning for noise ${i}\\%",
@@ -283,7 +336,8 @@ object PlotsNoiseConfigGeneration extends App {
     plotConfig
   }
 
-  val plotConfig = s"""{
+  val plotConfig =
+    s"""{
       "plot": {
         "axis":"axis",
         "title": "runtime for HOSP Data Cleaning",
@@ -316,15 +370,17 @@ object PlotsNoiseConfigGeneration extends App {
     },
     """
 
-  val start = s"""{
+  val start =
+    s"""{
   "plots": [
     $plotConfig"""
   val sep =
     s""",
        |
      """.stripMargin
-  val end = s"""]
-               |}
+  val end =
+    s"""]
+       |}
      """.stripMargin
 
 

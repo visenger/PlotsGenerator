@@ -46,3 +46,16 @@ object ConfigPlayground extends App {
 
 
 }
+
+
+class Greeting{
+  var str="hello world"
+}
+
+object Tester extends App{
+  val greetingToday= new Greeting()
+  val anotherGreeting= greetingToday
+  anotherGreeting.str="oh no..."
+
+  println(s" greetingToday = ${greetingToday.str}")
+}
